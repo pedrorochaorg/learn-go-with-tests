@@ -8,7 +8,7 @@ import (
 
 func main() {
 
-	server := &PlayerServer{NewInMemoryPlayerStore()}
+	server := NewPlayerServer(NewInMemoryPlayerStore())
 
 	// start's the web server on port 5000 and add's the previous created handler to it.
 	// if the operation fails, the error message returned by the command ListenAndServe of the http package
