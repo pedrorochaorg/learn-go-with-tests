@@ -3,18 +3,20 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pedrorochaorg/learn-go-with-tests/examples/httpserver/helpers"
+	"github.com/pedrorochaorg/learn-go-with-tests/examples/httpserver/objects"
+	"github.com/pedrorochaorg/learn-go-with-tests/examples/httpserver/stores"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"sync"
 	"testing"
 )
 
-const jsonContentType = "application/json"
 
 func TestGETPlayers(t *testing.T) {
-	store := StubPlayerStore{
+	store := stores.StubPlayerStore{
 		map[string]int{
 			"Pepper": 20,
 			"Floyd":  10,
@@ -30,8 +32,8 @@ func TestGETPlayers(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
-		assertResponseStatusCode(t, response.Code, http.StatusOK)
-		assertResponseBody(t, response.Body.String(), "20")
+		helpers.AssertResponseStatusCode(t, response.Code, http.StatusOK)
+		helpers.AssertResponseBody(t, response.Body.String(), "20")
 
 	})
 
@@ -41,8 +43,8 @@ func TestGETPlayers(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
-		assertResponseStatusCode(t, response.Code, http.StatusOK)
-		assertResponseBody(t, response.Body.String(), "10")
+		helpers.AssertResponseStatusCode(t, response.Code, http.StatusOK)
+		helpers.AssertResponseBody(t, response.Body.String(), "10")
 
 	})
 
@@ -52,13 +54,13 @@ func TestGETPlayers(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
-		assertResponseStatusCode(t, response.Code, http.StatusNotFound)
+		helpers.AssertResponseStatusCode(t, response.Code, http.StatusNotFound)
 	})
 
 }
 
 func TestStoreWins(t *testing.T) {
-	store := StubPlayerStore{
+	store := stores.StubPlayerStore{
 		map[string]int{},
 		nil,
 		nil,
@@ -71,10 +73,10 @@ func TestStoreWins(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
-		assertResponseStatusCode(t, response.Code, http.StatusAccepted)
+		helpers.AssertResponseStatusCode(t, response.Code, http.StatusAccepted)
 
-		if len(store.winCalls) != 1 {
-			t.Errorf("got %d calls to RecordWin want %d", len(store.winCalls), 1)
+		if len(store.WinCalls) != 1 {
+			t.Errorf("got %d calls to RecordWin want %d", len(store.WinCalls), 1)
 		}
 	})
 
@@ -86,17 +88,24 @@ func TestStoreWins(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
-		assertResponseStatusCode(t, response.Code, http.StatusAccepted)
+		helpers.AssertResponseStatusCode(t, response.Code, http.StatusAccepted)
 
-		if store.winCalls[0] != player {
-			t.Errorf("did not store correct winner got %q want %q", store.winCalls[0], player)
+		if store.WinCalls[0] != player {
+			t.Errorf("did not store correct winner got %q want %q", store.WinCalls[0], player)
 		}
 	})
 }
 
 func TestRecordingWinsAndRetrievingThem(t *testing.T) {
+	database, cleanDatabase := helpers.CreateTempFile(t, `[]`)
+	defer cleanDatabase()
+	store, err := stores.NewFileSystemPlayerStore(database)
 
-	server := NewPlayerServer(NewInMemoryPlayerStore())
+	if err != nil {
+		log.Fatalf("problem creating file system player store, %v", err)
+	}
+
+	server := NewPlayerServer(store)
 	player := "Pepper"
 
 	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
@@ -106,20 +115,20 @@ func TestRecordingWinsAndRetrievingThem(t *testing.T) {
 	t.Run("get score", func(t *testing.T) {
 		response := httptest.NewRecorder()
 		server.ServeHTTP(response, newGetScoreRequest(player))
-		assertResponseStatusCode(t, response.Code, http.StatusOK)
-		assertResponseBody(t, response.Body.String(), "3")
+		helpers.AssertResponseStatusCode(t, response.Code, http.StatusOK)
+		helpers.AssertResponseBody(t, response.Body.String(), "3")
 	})
 
 	t.Run("get league", func(t *testing.T) {
 		response := httptest.NewRecorder()
 		server.ServeHTTP(response, newLeagueRequest())
-		assertResponseStatusCode(t, response.Code, http.StatusOK)
+		helpers.AssertResponseStatusCode(t, response.Code, http.StatusOK)
 
 		got := getLeagueFromResponse(t, response.Body)
-		want := []Player{
+		want := objects.League{
 			{"Pepper", 3},
 		}
-		assertLeague(t, got, want)
+		helpers.AssertLeague(t, got, want)
 	})
 }
 
@@ -134,7 +143,15 @@ func TestRecordingWinsConcurrentlyAndRetrieveThem(t *testing.T) {
 		{"John", 5, "5"},
 	}
 
-	server := NewPlayerServer(NewInMemoryPlayerStore())
+	database, cleanDatabase := helpers.CreateTempFile(t, `[]`)
+	defer cleanDatabase()
+	store, err := stores.NewFileSystemPlayerStore(database)
+
+	if err != nil {
+		log.Fatalf("problem creating file system player store, %v", err)
+	}
+
+	server := NewPlayerServer(store)
 
 	for _, test := range players {
 		t.Run(fmt.Sprintf("testing concurrent win calls to %s", test.Name), func(t *testing.T) {
@@ -152,9 +169,9 @@ func TestRecordingWinsConcurrentlyAndRetrieveThem(t *testing.T) {
 			wg.Wait()
 			response := httptest.NewRecorder()
 			server.ServeHTTP(response, newGetScoreRequest(test.Name))
-			assertResponseStatusCode(t, response.Code, http.StatusOK)
+			helpers.AssertResponseStatusCode(t, response.Code, http.StatusOK)
 
-			assertResponseBody(t, response.Body.String(), test.Result)
+			helpers.AssertResponseBody(t, response.Body.String(), test.Result)
 
 		})
 	}
@@ -164,7 +181,7 @@ func TestRecordingWinsConcurrentlyAndRetrieveThem(t *testing.T) {
 func TestLeague(t *testing.T) {
 
 	t.Run("it returns 200 0on /league", func(t *testing.T) {
-		store := StubPlayerStore{}
+		store := stores.StubPlayerStore{}
 		server := NewPlayerServer(&store)
 
 		request, _ := http.NewRequest(http.MethodGet, "/league", nil)
@@ -172,7 +189,7 @@ func TestLeague(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
-		var got []Player
+		var got objects.League
 
 		err := json.NewDecoder(response.Body).Decode(&got)
 
@@ -180,17 +197,17 @@ func TestLeague(t *testing.T) {
 			t.Fatalf("Unable to parse response from server %q into slice of Player, '%v'", response.Body, err)
 		}
 
-		assertResponseStatusCode(t, response.Code, http.StatusOK)
+		helpers.AssertResponseStatusCode(t, response.Code, http.StatusOK)
 	})
 
 	t.Run("it returns the league table as JSON", func(t *testing.T) {
-		wantedLeague := []Player{
+		wantedLeague := objects.League{
 			{"Cleo", 32},
 			{"Chris", 20},
 			{"Tiest", 14},
 		}
 
-		store := StubPlayerStore{nil, nil, wantedLeague}
+		store := stores.StubPlayerStore{nil, nil, wantedLeague}
 		server := NewPlayerServer(&store)
 
 		request := newLeagueRequest()
@@ -199,10 +216,10 @@ func TestLeague(t *testing.T) {
 		server.ServeHTTP(response, request)
 
 		got := getLeagueFromResponse(t, response.Body)
-		assertResponseStatusCode(t, response.Code, http.StatusOK)
-		assertLeague(t, got, wantedLeague)
+		helpers.AssertResponseStatusCode(t, response.Code, http.StatusOK)
+		helpers.AssertLeague(t, got, wantedLeague)
 
-		assertContentType(t, response, jsonContentType)
+		helpers.AssertContentType(t, response, jsonContentType)
 
 	})
 }
@@ -217,21 +234,7 @@ func newPostWinRequest(name string) *http.Request {
 	return req
 }
 
-func assertResponseBody(t *testing.T, got, want string) {
-	t.Helper()
-	if got != want {
-		t.Errorf("response body is wrong, got %q want %q", got, want)
-	}
-}
-
-func assertResponseStatusCode(t *testing.T, got, want int) {
-	t.Helper()
-	if got != want {
-		t.Errorf("response status code is wrong, got %d want %d", got, want)
-	}
-}
-
-func getLeagueFromResponse(t *testing.T, body io.Reader) (league []Player) {
+func getLeagueFromResponse(t *testing.T, body io.Reader) (league objects.League) {
 	t.Helper()
 	err := json.NewDecoder(body).Decode(&league)
 
@@ -240,20 +243,6 @@ func getLeagueFromResponse(t *testing.T, body io.Reader) (league []Player) {
 	}
 
 	return
-}
-
-func assertLeague(t *testing.T, got, want []Player) {
-	t.Helper()
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v want %v", got, want)
-	}
-}
-
-func assertContentType(t *testing.T, response *httptest.ResponseRecorder, want string) {
-	t.Helper()
-	if response.Result().Header.Get("content-type") != want {
-		t.Errorf("response did not have content-type of %s, got %v", want, response.Result().Header)
-	}
 }
 
 func newLeagueRequest() *http.Request {

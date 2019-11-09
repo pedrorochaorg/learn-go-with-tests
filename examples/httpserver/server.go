@@ -3,24 +3,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pedrorochaorg/learn-go-with-tests/examples/httpserver/objects"
 	"log"
 	"net/http"
 )
 
-type PlayerStore interface {
-	GetPlayerScore(name string) int
-	RecordWin(name string)
-	GetLeague() []Player
-}
-
-
-
 type PlayerServer struct {
-	store PlayerStore
+	store objects.PlayerStore
 	http.Handler
 }
 
-func NewPlayerServer(store PlayerStore) *PlayerServer {
+const jsonContentType = "application/json"
+
+func NewPlayerServer(store objects.PlayerStore) *PlayerServer {
 	p := new(PlayerServer)
 	p.store = store
 
@@ -33,7 +28,7 @@ func NewPlayerServer(store PlayerStore) *PlayerServer {
 }
 
 func (p *PlayerServer) leagueHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "application/json")
+	w.Header().Set("content-type", jsonContentType)
 	err := json.NewEncoder(w).Encode(p.store.GetLeague())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -70,32 +65,8 @@ func (p *PlayerServer) processWin(w http.ResponseWriter, player string) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func (p *PlayerServer) getLeagueTable() []Player {
-	return []Player{
+func (p *PlayerServer) getLeagueTable() objects.League {
+	return objects.League{
 		{"Chris", 20},
 	}
-}
-
-
-type StubPlayerStore struct {
-	scores map[string]int
-	winCalls []string
-	league []Player
-}
-
-func (s *StubPlayerStore) GetPlayerScore(name string) (score int) {
-	score = s.scores[name]
-	return score
-}
-
-func (s *StubPlayerStore) RecordWin(name string) {
-	s.winCalls = append(s.winCalls, name)
-}
-func (s *StubPlayerStore) GetLeague() []Player {
-	return s.league
-}
-
-type Player struct {
-	Name string
-	Wins int
 }
