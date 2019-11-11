@@ -1,21 +1,20 @@
-package main
+package poker_test
 
 import (
-	"github.com/pedrorochaorg/learn-go-with-tests/examples/httpserver/helpers"
-	"github.com/pedrorochaorg/learn-go-with-tests/examples/httpserver/objects"
+	poker "github.com/pedrorochaorg/learn-go-with-tests/examples/httpserver"
 	"io/ioutil"
 	"testing"
 )
 
 func TestTape_Write(t *testing.T) {
-	file, clean := helpers.CreateTempFile(t, "12345")
+	file, clean := poker.CreateTempFile(t, "12345")
 	defer clean()
 
-	tape := objects.NewTape(file)
+	tape := poker.NewTape(file)
 
 	tape.Write([]byte("abc"))
 
-	file.Seek(0,0)
+	file.Seek(0, 0)
 	newFileContents, _ := ioutil.ReadAll(file)
 
 	got := string(newFileContents)
