@@ -8,7 +8,6 @@ type Tape struct {
 	file *os.File
 }
 
-
 func NewTape(reader *os.File) *Tape {
 	return &Tape{reader}
 }

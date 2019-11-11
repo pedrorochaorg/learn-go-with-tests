@@ -22,7 +22,6 @@ func NewFileSystemPlayerStore(file *os.File) (*FileSystemPlayerStore, error) {
 		return nil, fmt.Errorf("problem initialising player db file, %v", err)
 	}
 
-
 	league, err := NewLeague(file)
 
 	if err != nil {
@@ -31,7 +30,7 @@ func NewFileSystemPlayerStore(file *os.File) (*FileSystemPlayerStore, error) {
 
 	return &FileSystemPlayerStore{
 		database: json.NewEncoder(NewTape(file)),
-		league: league,
+		league:   league,
 	}, nil
 }
 
@@ -87,7 +86,6 @@ func (f *FileSystemPlayerStore) RecordWin(name string) {
 
 	f.database.Encode(f.league)
 }
-
 
 func initialisePlayerDBFile(file *os.File) error {
 	file.Seek(0, 0)

@@ -115,7 +115,6 @@ func TestGame_Start(t *testing.T) {
 		poker.CheckSchedulingCases(t, blindAlerter.Alerts, cases)
 	})
 
-
 }
 
 func TestGame_Finish(t *testing.T) {

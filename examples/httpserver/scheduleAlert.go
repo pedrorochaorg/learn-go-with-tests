@@ -6,7 +6,7 @@ import (
 )
 
 type ScheduledAlert struct {
-	At time.Duration
+	At     time.Duration
 	Amount int
 }
 

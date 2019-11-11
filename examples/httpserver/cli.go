@@ -45,7 +45,6 @@ func (cli *CLI) PlayPoker() {
 		return
 	}
 
-
 	cli.game.Finish(winner)
 
 }

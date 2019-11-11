@@ -14,13 +14,11 @@ type PlayerServer struct {
 	store PlayerStore
 	http.Handler
 	template *template.Template
-	game Game
+	game     Game
 }
-
 
 const JsonContentType = "application/json"
 const htmlTemplatePath = "static/game.html"
-
 
 var wsUpgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -58,7 +56,6 @@ func (w *playerServerWS) Write(p []byte) (n int, err error) {
 
 	return len(p), nil
 }
-
 
 func NewPlayerServer(store PlayerStore, game Game) (*PlayerServer, error) {
 	p := new(PlayerServer)
@@ -110,8 +107,7 @@ func (p *PlayerServer) leagueHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-
-func (p *PlayerServer) playersHandler(w http.ResponseWriter, r *http.Request)  {
+func (p *PlayerServer) playersHandler(w http.ResponseWriter, r *http.Request) {
 	player := r.URL.Path[len("/players/"):]
 
 	switch r.Method {

@@ -36,7 +36,7 @@ type SpyBlindAlerter struct {
 }
 
 func (s *SpyBlindAlerter) ScheduleAlertAt(duration time.Duration, amount int, to io.Writer) {
-	s.Alerts = append(s.Alerts, ScheduledAlert{duration,  amount})
+	s.Alerts = append(s.Alerts, ScheduledAlert{duration, amount})
 }
 
 type GameSpy struct {
@@ -120,7 +120,6 @@ func AssertScheduleAlert(t *testing.T, got ScheduledAlert, want ScheduledAlert) 
 		t.Errorf("got %v want %v", got, want)
 	}
 }
-
 
 func CreateTempFile(t *testing.T, initialData string) (*os.File, func()) {
 	t.Helper()

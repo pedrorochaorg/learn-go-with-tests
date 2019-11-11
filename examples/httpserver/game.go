@@ -17,12 +17,10 @@ type Game interface {
 
 func NewTexasHoldem(alerter BlindAlerter, store PlayerStore) *TexasHoldem {
 	return &TexasHoldem{
-		alerter:alerter,
-		store:store,
+		alerter: alerter,
+		store:   store,
 	}
 }
-
-
 
 func (p *TexasHoldem) Start(numberOfPlayers int, alertsDestination io.Writer) {
 	blindIncrement := time.Duration(5+numberOfPlayers) * time.Minute
@@ -38,4 +36,3 @@ func (p *TexasHoldem) Start(numberOfPlayers int, alertsDestination io.Writer) {
 func (p *TexasHoldem) Finish(winner string) {
 	p.store.RecordWin(winner)
 }
-

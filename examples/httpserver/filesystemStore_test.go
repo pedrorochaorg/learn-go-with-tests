@@ -46,7 +46,6 @@ func TestFileSystemStore(t *testing.T) {
 			log.Fatalf("problem creating file system player store, %v", err)
 		}
 
-
 		got := store.GetPlayerScore("Chris")
 
 		want := 33
@@ -84,7 +83,6 @@ func TestFileSystemStore(t *testing.T) {
 		if err != nil {
 			log.Fatalf("problem creating file system player store, %v", err)
 		}
-
 
 		store.RecordWin("Pepper")
 
